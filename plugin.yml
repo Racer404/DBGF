@@ -1,0 +1,16 @@
+api: NA
+name: deadByGayfight
+main: racer.fund.Main
+version: "1.0"
+api-version: 1.8
+
+commands:
+   gfregister:
+      description: register player to deadbyGayfight
+      usage: /gfregister [Player Name]
+   gfstart:
+      description: start the deadbyGayfight
+      usage: /gfstart
+   gfstrike:
+      description: strike a random player
+      usage: /gfstart
