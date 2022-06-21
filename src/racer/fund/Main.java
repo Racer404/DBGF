@@ -18,6 +18,7 @@ import org.bukkit.craftbukkit.v1_8_R1.entity.CraftEnderSignal;
 import org.bukkit.craftbukkit.v1_8_R1.entity.CraftPlayer;
 import org.bukkit.entity.EnderSignal;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Arrow.Spigot;
 import org.bukkit.event.Event.Result;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -31,11 +32,15 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
+import net.minecraft.server.v1_8_R1.ChatComponentText;
 import net.minecraft.server.v1_8_R1.ChatSerializer;
 import net.minecraft.server.v1_8_R1.EntityEnderSignal;
 import net.minecraft.server.v1_8_R1.EntityHuman;
 import net.minecraft.server.v1_8_R1.EnumTitleAction;
 import net.minecraft.server.v1_8_R1.IChatBaseComponent;
+import net.minecraft.server.v1_8_R1.PacketPlayOutChat;
 import net.minecraft.server.v1_8_R1.PacketPlayOutTitle;
 
 
@@ -55,6 +60,15 @@ public class Main extends JavaPlugin{
     	this.getCommand("gfregister").setExecutor(new gfRegisterCommand());
     	this.getCommand("gfstart").setExecutor(new gfStartCommand());
     	this.getCommand("gfstrike").setExecutor(new gfStrikePlayer());
+    	
+		Bukkit.getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
+    	    public void run() {
+    	    	if(gameStarted) {
+    	    		sendActionBar(blinderPlayer, getActionBarCountDown());
+    	    	}
+    	    }
+    	}, 20, 20);
+    	
     }
     // Fired when plugin is disabled
     @Override
@@ -88,6 +102,8 @@ public class Main extends JavaPlugin{
 	public static boolean startGame() {
     	if(!gameStarted) {
 	    	if(gamePlayers.size()>=2) {
+	    		countDown=239;
+	        	ActionBarBuilder=new StringBuilder("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||");
 	    		int randomPlayer=(int) (Math.random()*gamePlayers.size());
 	    		Player[] players=gamePlayers.toArray(new Player[gamePlayers.size()]);
 	    		blinderPlayer=players[randomPlayer];
@@ -122,7 +138,7 @@ public class Main extends JavaPlugin{
 					public void run() {
 						// TODO Auto-generated method stub
 						Player[] players=Main.gamePlayers.toArray(new Player[Main.gamePlayers.size()]);
-						Bukkit.broadcastMessage(players.length+"length");
+						Bukkit.broadcastMessage("Loudest claps to following "+players.length+" performancers!");
 						for(int i=0;i<players.length;i++) {
 							Bukkit.broadcastMessage(players[i].getName());
 							players[i].setGameMode(GameMode.ADVENTURE);
@@ -184,6 +200,19 @@ public class Main extends JavaPlugin{
     ((CraftPlayer) player).getHandle().playerConnection.sendPacket(title);
     ((CraftPlayer) player).getHandle().playerConnection.sendPacket(length);
     }
+    
+    void sendActionBar(Player player, String message) {
+	    PacketPlayOutChat packet = new PacketPlayOutChat(new ChatComponentText(message), (byte)2);
+        ((CraftPlayer) player).getHandle().playerConnection.sendPacket(packet);
+    }
+    
+    static StringBuilder ActionBarBuilder;
+    static int countDown;
+    String getActionBarCountDown() {
+    		ActionBarBuilder.deleteCharAt(countDown);
+    		countDown--;
+    		return ActionBarBuilder.toString()+"|";
+    }
 }
 
 
@@ -225,11 +254,9 @@ class gfStartCommand implements CommandExecutor{
 class gfStrikePlayer implements CommandExecutor{
 	@Override
 	public boolean onCommand(CommandSender sender, Command arg1, String arg2, String[] arg3) {
-//			if(Main.startGame()) {
 				Bukkit.broadcastMessage("[DBGF]: Striked");
 				Player player=(Player) sender;
-			    player.getWorld().strikeLightning(player.getLocation());
-//			}
+
 			return true;
 	}
 }
@@ -267,64 +294,24 @@ class eventListener implements Listener {
         			Main.blinderPlayer=null;
         			Main.gameStarted=false;
         		}
+        		if(Main.blinderPlayer.getName().equals(e.getEntity().getName())) {
+        			Bukkit.broadcastMessage("Loudest claps to following "+players.length+" performancers!");
+					for(int i=0;i<players.length;i++) {
+						Bukkit.broadcastMessage(players[i].getName());
+						players[i].setGameMode(GameMode.ADVENTURE);
+						players[i].removePotionEffect(PotionEffectType.SLOW);
+						Main.sendTrickersWins(players[i]);
+					}
+					Main.blinderPlayer.removePotionEffect(PotionEffectType.INCREASE_DAMAGE);
+					Main.blinderPlayer.removePotionEffect(PotionEffectType.BLINDNESS);
+					Main.sendTrickersWins(Main.blinderPlayer);
+					Main.gamePlayers.clear();
+					Main.outPlayers.clear();
+					Main.blinderPlayer=null;
+					Main.gameStarted=false;
+        		}
         	}
         }
     }
 	
-//	@EventHandler
-//	public void onPlayerInteract(PlayerInteractEvent e)
-//	{
-//		Player player = e.getPlayer();
-//		
-//		if (e.getItem() == null ||  e.getItem().getType() != Material.EYE_OF_ENDER) return; // If the player isn't holding an item
-//	
-//		if (e.getItem().getType() == Material.EYE_OF_ENDER)
-//		{
-//			if (e.getAction() == Action.RIGHT_CLICK_AIR || e.getAction() == Action.RIGHT_CLICK_BLOCK)
-//			{
-//				if (e.getClickedBlock() != null) if (e.getClickedBlock().getType() == Material.ENDER_PORTAL_FRAME) return; 
-//
-//				e.setCancelled(true); // If block clicked was End Portal Frame, the event is ignored and item is used normally.
-//				e.setUseItemInHand(Result.DENY); // This makes sure we don't get duplicate ender eyes spawning (happens if this isn't set to 'deny')
-//				
-//				// Get nearest target location
-//				Location target = new Location(player.getWorld(), 317, 69, 96);
-//				if (target == null) return;
-//								
-//				// Get the location to spawn the ender signal at
-//				Location signalLocation = player.getLocation(); // The ender signal spawns at the player's eye height
-//				signalLocation.setY(signalLocation.getY() + player.getEyeHeight());
-//				
-//				// Spawn the ender signal + get EntityEnderSignal handle
-//				EnderSignal eye = e.getPlayer().getWorld().spawn(signalLocation, EnderSignal.class);
-//				
-//				
-//				// Make some noise :D
-//				World world =  e.getPlayer().getWorld();
-//				
-//				// Play sound in world (player entity, x, y, z, sound effect, sound category, balance?, volume?)
-////				world.playSound(signalLocation, Sound.ENTITY_ENDER_EYE_LAUNCH, SoundCategory.NEUTRAL, 100, 1);
-//				
-//				// This function sets the location that ender eyes float towards
-//				eye.setTargetLocation(target);
-//				
-//			}
-//		}
-//	}
-}
-
-
-
-class strikeCDCounterThread extends Thread{
-	@Override
-	public void run() {
-		// TODO Auto-generated method stub
-		super.run();
-		try {
-			strikeCDCounterThread.sleep(60000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
 }
