@@ -11,6 +11,6 @@ commands:
    gfstart:
       description: start the deadbyGayfight
       usage: /gfstart
-   gfstrike:
-      description: strike a random player
-      usage: /gfstart
+   gfsetlobby:
+      description: set the lobby position
+      usage: /gfsetlobby [x, y, z]
