@@ -131,19 +131,15 @@ public class Main extends JavaPlugin{
 						Bukkit.broadcastMessage("Loudest claps to following "+players.length+" performancers!");
 						for(int i=0;i<players.length;i++) {
 							Bukkit.broadcastMessage(players[i].getName());
-							players[i].teleport(new Location(players[i].getWorld(),config.getIntegerList("lobbyPosition").get(0),config.getIntegerList("lobbyPosition").get(1),config.getIntegerList("lobbyPosition").get(2)));
-							players[i].setGameMode(GameMode.ADVENTURE);
+							players[i].setGameMode(GameMode.SPECTATOR);
 							players[i].removePotionEffect(PotionEffectType.SLOW);
 							Main.sendTrickersWins(players[i]);
 						}
-						Main.blinderPlayer.teleport(new Location(Main.blinderPlayer.getWorld(),config.getIntegerList("lobbyPosition").get(0),config.getIntegerList("lobbyPosition").get(1),config.getIntegerList("lobbyPosition").get(2)));
+	        			Main.blinderPlayer.setGameMode(GameMode.SPECTATOR);
 						Main.blinderPlayer.removePotionEffect(PotionEffectType.INCREASE_DAMAGE);
 						Main.blinderPlayer.removePotionEffect(PotionEffectType.BLINDNESS);
 						Main.sendTrickersWins(Main.blinderPlayer);
-						Main.gamePlayers.clear();
-						Main.outPlayers.clear();
-						Main.blinderPlayer=null;
-						Main.gameStarted=false;
+						initiateGame();
 					}
 				};
 				countDownTask.runTaskLater(getPlugin(Main.class), 20L*240L);
@@ -206,6 +202,29 @@ public class Main extends JavaPlugin{
     		return ActionBarBuilder.toString()+"|";
     }
     
+    public static void initiateGame() {
+		// TODO Auto-generated method stub
+    	new BukkitRunnable() {
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				Player[] players=Main.gamePlayers.toArray(new Player[Main.gamePlayers.size()]);
+		    	for(int i=0;i<players.length;i++) {
+					players[i].teleport(new Location(players[i].getWorld(),Main.config.getIntegerList("lobbyPosition").get(0),Main.config.getIntegerList("lobbyPosition").get(1),Main.config.getIntegerList("lobbyPosition").get(2)));
+//					players[i].removePotionEffect(PotionEffectType.SLOW);
+					players[i].setGameMode(GameMode.ADVENTURE);
+				}
+				Main.blinderPlayer.teleport(new Location(Main.blinderPlayer.getWorld(),Main.config.getIntegerList("lobbyPosition").get(0),Main.config.getIntegerList("lobbyPosition").get(1),Main.config.getIntegerList("lobbyPosition").get(2)));
+				Main.blinderPlayer.setGameMode(GameMode.ADVENTURE);
+				
+		    	Main.gamePlayers.clear();
+				Main.outPlayers.clear();
+				Main.blinderPlayer=null;
+				Main.gameStarted=false;
+			}
+		}.runTaskLater(Main.getPlugin(Main.class), 20L*5L);
+		
+	}
 }
 
 
@@ -218,54 +237,48 @@ class eventListener implements Listener {
 	@EventHandler
     public void onPlayerDead (PlayerDeathEvent e) {
         if (e.getEntity() instanceof Player) {
-            //some code here
+            //CHECK IF GAME STARTED
         	if(Main.gameStarted) {
         		boolean playerInGame=false;
         		Player[] players=Main.gamePlayers.toArray(new Player[Main.gamePlayers.size()]);
         		for(int j=0;j<players.length;j++) {
-        			if(players[j].getName().equals(e.getEntity().getName())) {
+        			if(players[j].getName().equals(e.getEntity().getName())||Main.blinderPlayer.getName().equals(e.getEntity().getName())) {
         				playerInGame=true;
+        				break;
         			}
         		}
+        		//SEND DEADPLAYER TO SPECTATOR
         		if(playerInGame) {
         			e.getEntity().setGameMode(GameMode.SPECTATOR);
             		Main.outPlayers.add(e.getEntity());
         		}
-        		if(Main.outPlayers.size()==Main.gamePlayers.size()) {
-        			for(int i=0;i<players.length;i++) {
-        				players[i].setGameMode(GameMode.ADVENTURE);
-						players[i].teleport(new Location(players[i].getWorld(),Main.config.getIntegerList("lobbyPosition").get(0),Main.config.getIntegerList("lobbyPosition").get(1),Main.config.getIntegerList("lobbyPosition").get(2)));
-        				players[i].removePotionEffect(PotionEffectType.SLOW);
-        				Main.sendBlinderWins(players[i]);
-        			}
-					Main.blinderPlayer.teleport(new Location(Main.blinderPlayer.getWorld(),Main.config.getIntegerList("lobbyPosition").get(0),Main.config.getIntegerList("lobbyPosition").get(1),Main.config.getIntegerList("lobbyPosition").get(2)));
-        			Main.blinderPlayer.removePotionEffect(PotionEffectType.INCREASE_DAMAGE);
-        			Main.blinderPlayer.removePotionEffect(PotionEffectType.BLINDNESS);
-        			
-        			Main.sendBlinderWins(Main.blinderPlayer);
-        			Main.countDownTask.cancel();
-        			Main.gamePlayers.clear();
-        			Main.outPlayers.clear();
-        			Main.blinderPlayer=null;
-        			Main.gameStarted=false;
-        		}
-        		else if(Main.blinderPlayer.getName().equals(e.getEntity().getName())) {
+        		//BLINDER DEAD
+        		if(Main.blinderPlayer.getName().equals(e.getEntity().getName())) {
         			Bukkit.broadcastMessage("Loudest claps to following "+players.length+" performancers!");
 					for(int i=0;i<players.length;i++) {
 						Bukkit.broadcastMessage(players[i].getName());
-						players[i].setGameMode(GameMode.ADVENTURE);
-						players[i].teleport(new Location(players[i].getWorld(),Main.config.getIntegerList("lobbyPosition").get(0),Main.config.getIntegerList("lobbyPosition").get(1),Main.config.getIntegerList("lobbyPosition").get(2)));
+						players[i].setGameMode(GameMode.SPECTATOR);
 						players[i].removePotionEffect(PotionEffectType.SLOW);
 						Main.sendTrickersWins(players[i]);
 					}
-					Main.blinderPlayer.teleport(new Location(Main.blinderPlayer.getWorld(),Main.config.getIntegerList("lobbyPosition").get(0),Main.config.getIntegerList("lobbyPosition").get(1),Main.config.getIntegerList("lobbyPosition").get(2)));
-					Main.blinderPlayer.removePotionEffect(PotionEffectType.INCREASE_DAMAGE);
-					Main.blinderPlayer.removePotionEffect(PotionEffectType.BLINDNESS);
 					Main.sendTrickersWins(Main.blinderPlayer);
-					Main.gamePlayers.clear();
-					Main.outPlayers.clear();
-					Main.blinderPlayer=null;
-					Main.gameStarted=false;
+					Main.countDownTask.cancel();
+					Main.initiateGame();
+
+        		}
+        		
+        		//ALL TRICKER DEAD
+        		else if(Main.outPlayers.size()==Main.gamePlayers.size()) {
+        			for(int i=0;i<players.length;i++) {
+        				players[i].setGameMode(GameMode.SPECTATOR);
+        				Main.sendBlinderWins(players[i]);
+        			}
+        			Main.blinderPlayer.removePotionEffect(PotionEffectType.INCREASE_DAMAGE);
+					Main.blinderPlayer.removePotionEffect(PotionEffectType.BLINDNESS);
+        			Main.blinderPlayer.setGameMode(GameMode.SPECTATOR);
+        			Main.sendBlinderWins(Main.blinderPlayer);
+        			Main.countDownTask.cancel(); 
+    				Main.initiateGame();
         		}
         	}
         }
